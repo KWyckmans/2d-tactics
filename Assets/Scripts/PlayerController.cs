@@ -6,34 +6,27 @@ using UnityEngine;
 * Loosely based on https://github.com/Cawotte/SmallWorld_WeeklyJam40/blob/master/Assets/Scripts/Player.cs
 */
 
-// TODO: Connect these to the AnimatorControllerParameter values
-enum MovementDirections {
-    UP, DOWN, LEFT, RIGHT, UPLEFT, UPRIGHT, DOWNLEFT, DOWNRIGHT
-}
-
-
 public class PlayerController : MonoBehaviour
 {
     public float moveTime = 0.1f;
-    
+    public float animationSpeed = 0.75f;
+
     private float inverseMoveTime;
     private BoxCollider2D boxCollider;
     private Rigidbody2D rb2D;
 
-    public AnimationClip walk;
-    public AnimationClip idle;
+    
+    private Animator animator;
+    private const string ANIMATOR_MOVING_LEFT_PARAM = "isMovingLeft";
+    private const string ANIMATOR_MOVING_RIGHT_PARAM = "isMovingRight";
+    private const string ANIMATOR_MOVING_UP_PARAM = "isMovingUp";
+    private const string ANIMATOR_MOVING_DOWN_PARAM = "isMovingDown";
 
-    public float animationSpeed = 0.75f;
-
-    bool isMoving = false;
-
-    Animator animator;
-
-    Dictionary<MovementDirections, AnimatorControllerParameter> animations;
-
-    string current_animation;
+    private string current_animation;
 
     void Awake(){
+        // TODO: Do this in awake or in start?
+
         animator = GetComponent<Animator>();
         // TODO: Think about this: I still need to specify the string names..
         // foreach(AnimatorControllerParameter parameter in animator.parameters){
@@ -46,22 +39,20 @@ public class PlayerController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        // TODO: Do this in awake or start?
+
         boxCollider = GetComponent<BoxCollider2D>();
         rb2D = GetComponent<Rigidbody2D>();
         inverseMoveTime = 1f / moveTime;
     }
 
-    // Update is called once per frame
-    void Update()
-    {
+
+    private Vector2Int GetMovementDirection(){
         int horizontal = 0;
         int vertical = 0;
         //To get move directions
         float horizontalRaw = Input.GetAxisRaw("Horizontal");
         float verticalRaw = Input.GetAxisRaw("Vertical");
-
-        Debug.Log(" - - - - - - - ");
-        Debug.Log($"input - raw - h {horizontalRaw} - v {verticalRaw}");
 
         // TODO: Extract to dedicated method
         if(horizontalRaw > 0){
@@ -76,69 +67,53 @@ public class PlayerController : MonoBehaviour
             vertical = Mathf.RoundToInt(verticalRaw);   
         }
 
-        //If there's a direction, we are trying to move.
-        if (horizontal != 0 || vertical != 0)
-        {
-            // StartCoroutine(actionCooldown(0.2f));
-            Move(horizontal, vertical);
-        }
-        
+        return new Vector2Int(horizontal, vertical);
+    }
 
+    private bool IsMoving(Vector2 input){
+        return input.x != 0 || input.y != 0;
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        Vector2Int input = GetMovementDirection();
+
+        if(!IsMoving(input)){
+            if(current_animation != "") animator.SetBool(current_animation, false);
+        } else{
+            Move(input.x, input.y);
+        }
+
+    }
+
+    private void SetAnimationForDirection(int xDir, int yDir){
+        string new_anim = "";
+        
+        if (xDir == 1) new_anim = ANIMATOR_MOVING_RIGHT_PARAM;
+        else if (xDir == -1) new_anim = ANIMATOR_MOVING_LEFT_PARAM;
+        else if (yDir == 1) new_anim = ANIMATOR_MOVING_UP_PARAM;
+        else if (yDir == -1) new_anim = ANIMATOR_MOVING_DOWN_PARAM;
+
+        if(current_animation != new_anim){
+            animator.SetBool(current_animation, false);
+            current_animation = new_anim;
+        }
+
+        animator.SetBool(current_animation, true);
+
+    }
+    private Vector3 GetNewPosition(int xDir, int yDir){
+        Vector2 startCell = transform.position;
+        Vector2 targetCell = startCell + new Vector2(xDir, yDir);
+
+        return Vector3.MoveTowards(transform.position, targetCell, inverseMoveTime * Time.deltaTime);
     }
 
     private void Move(int xDir, int yDir)
     {
-        if(isMoving) return;
-        // animator.Play(walk.name);
-        // Debug.Log($"Moving in direction {xDir} - {yDir}");
-        if(yDir == 1) current_animation = "isMovingUp";
-        else if (xDir == 1) current_animation = "isMovingRight";
-        else if (xDir == -1) current_animation = "isMovingLeft";
-        else if (yDir == -1) current_animation = "isMovingDown";
-
-        Debug.Log($"Current animation: {current_animation}");
-        animator.SetBool(current_animation, true);
-
-        // animator.Play("walk_right");
-        Vector2 startCell = transform.position;
-        Vector2 targetCell = startCell + new Vector2(xDir, yDir);
-        StartCoroutine(SmoothMovement(targetCell));       
-    }
-
-
-    private IEnumerator SmoothMovement(Vector3 end)
-    {
-        //while (isMoving) yield return null;
-
-        isMoving = true;
-
-        // //Play movement sound
-        // if ( walkingSound != null )
-        // {
-        //     walkingSound.loop = true;
-        //     walkingSound.Play();
-        // }
-
-        float sqrRemainingDistance = (transform.position - end).sqrMagnitude;
-        float inverseMoveTime = 1 / moveTime;
-
-        while (sqrRemainingDistance > float.Epsilon)
-        {
-            Vector3 newPosition = Vector3.MoveTowards(transform.position, end, inverseMoveTime * Time.deltaTime);
-            transform.position = newPosition;
-            sqrRemainingDistance = (transform.position - end).sqrMagnitude;
-
-            yield return null;
-        }
-
-        // if (walkingSound != null)
-        //     walkingSound.loop = false;
-        isMoving = false;
-
-        if(!isMoving){
-            animator.SetBool(current_animation, false);
-            // animator.StopPlayback();
-        }
+        SetAnimationForDirection(xDir, yDir);
+        transform.position = GetNewPosition(xDir, yDir);
     }
 }
 
