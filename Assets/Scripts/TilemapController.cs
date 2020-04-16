@@ -21,6 +21,8 @@ public class TilemapController : MonoBehaviour
         // that in GetTileData switches to a sprite with a border in the required direction for tiles at the 
         // edge. If needed can even be scaled a bit to make it "stick out". Alternatively: don't do a border.
         // Proposed solution would also allow for rounded borders.
+        //INVESTIGATE: An alternative to setting the color would be to replace the sprite with
+        // a highlighted verison. Could easily hook in with the TODO above.
     
         if (Input.GetMouseButtonDown(0))
 		{
