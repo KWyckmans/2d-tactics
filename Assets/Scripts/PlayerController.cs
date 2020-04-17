@@ -12,6 +12,8 @@ public class PlayerController : MonoBehaviour
     public float moveTime = 0.1f;
     public float animationSpeed = 0.75f;
 
+    public int maxMovementDistance;
+
     public Text locationText;
 
     private float inverseMoveTime;
@@ -26,6 +28,9 @@ public class PlayerController : MonoBehaviour
     private const string ANIMATOR_MOVING_DOWN_PARAM = "isMovingDown";
 
     private string current_animation = "";
+
+    public TilemapController tilemapController;
+
 
     void Awake()
     {
@@ -49,6 +54,8 @@ public class PlayerController : MonoBehaviour
         boxCollider = GetComponent<BoxCollider2D>();
         rb2D = GetComponent<Rigidbody2D>();
         inverseMoveTime = 1f / moveTime;
+
+        highlightMovementDistance(Vector2Int.zero, maxMovementDistance);
     }
 
 
@@ -100,6 +107,26 @@ public class PlayerController : MonoBehaviour
             Move(input.x, input.y);
         }
 
+    }
+
+    private void highlightMovementDistance(Vector2Int start, int maxDist)
+    {
+        Debug.Log($"{start}, max: {maxDist}");
+        for (int y = start.y - maxDist; y <= maxDist; y++)
+        {
+            for (int x = start.x - maxDist; x <= maxDist; x++)
+            {
+                var distY = maxDist - Mathf.Abs(y);
+
+                if(x > start.x - distY && x < start.x + distY){
+                    Debug.Log($"Should highlight {x} {y}");
+                    tilemapController.setTileToColor(new Vector2Int(x,y), Color.cyan);
+                }
+
+
+            }
+
+        }
     }
 
     private void SetAnimationForDirection(int xDir, int yDir)

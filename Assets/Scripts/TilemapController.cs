@@ -6,10 +6,15 @@ using UnityEngine.Tilemaps;
 public class TilemapController : MonoBehaviour
 {
     Tilemap map;
+
+    void Awake()
+    {
+        map = GetComponent<Tilemap>();
+    }
+
     // Start is called before the first frame update
     void Start()
     {
-        map = GetComponent<Tilemap>();
     }
 
     // Update is called once per frame
@@ -38,5 +43,10 @@ public class TilemapController : MonoBehaviour
 
             Debug.Log($"{cellLoc.x}, {cellLoc.y}");
         }
+    }
+
+    public void setTileToColor(Vector2Int loc, Color color){
+        Debug.Log($"Setting {loc} to {color}");
+        map.SetColor((Vector3Int)loc, color);
     }
 }
